@@ -49,6 +49,10 @@ class DecoderBlock(torch.nn.Module):
     def __init__(self, dff=1024, d_model=512, dropout=0.1):
         super().__init__()
         
+        # Add layer normalization layers
+        self.norm1 = torch.nn.LayerNorm(d_model)
+        self.norm2 = torch.nn.LayerNorm(d_model)
+        
         self.attention = attention.SelfAttention(
             d_model, 
             dropout=dropout, 
@@ -57,12 +61,13 @@ class DecoderBlock(torch.nn.Module):
         )
         self.mlp = mlp.MLP(d_model, dff, dropout)
 
-
     def forward(self, x: torch.Tensor):
-
-        x = self.attention(x)
-
-        x = x + self.mlp(x)
+        # Pre-norm architecture
+        attn_out = self.attention(self.norm1(x))
+        x = x + attn_out  # Residual connection
+        
+        mlp_out = self.mlp(self.norm2(x))
+        x = x + mlp_out  # Residual connection
         return x
     
     

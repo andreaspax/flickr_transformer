@@ -5,6 +5,7 @@ import torch
 def get_vocab():
     tokenizer = transformers.CLIPTokenizer.from_pretrained('openai/clip-vit-base-patch32')
     vocab = tokenizer.get_vocab()
+    vocab = {v: k for k, v in vocab.items()}
     return vocab
 
 
@@ -17,5 +18,5 @@ def get_device():
         return torch.device("cpu")
     
 if __name__ == "__main__":
-    device = get_device()
-    print(device)
+    vocab = get_vocab()
+    print(vocab[49407])

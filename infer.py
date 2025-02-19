@@ -19,7 +19,7 @@ seed = 2
 model = decoder.Decoder(di_initial=512, d_model=d_model, dff=dff, vocab_size=vocab_size, dropout=dropout)
 
 print("Loading model...")
-model.load_state_dict(torch.load("weights/flicker-captioning-best.pt", map_location=device))
+model.load_state_dict(torch.load("weights/flicker-captioning-best.pt", map_location=device, weights_only=True))
 
 # count number of parameters
 total_params = sum(p.numel() for p in model.parameters())
@@ -49,7 +49,7 @@ with torch.no_grad():
     
     with torch.no_grad():
         for n in range(1):
-            print(f"\nCurrent sequence: {[t.item() for t in token_seq[0]]}")
+            print(f"\nCurrent sequence: {token_seq}")
             
             # Make prediction
             logits = model(token_seq)
