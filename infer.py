@@ -39,36 +39,7 @@ with torch.no_grad():
 
     # Create start token (usually 10 for start token)
     tgt_seq = dataset.get_initial_img_embedding(photo).unsqueeze(0)  # Shape: [1, 1]
-    
-<<<<<<< Updated upstream
-    with torch.no_grad():
-        for n in range(1):
-            print(f"\nCurrent sequence: {token_seq}")
-            
-            # Make prediction
-            logits = model(token_seq)
-            
-            # Get prediction for next token only
-            prediction = torch.argmax(logits[0, n]).item()
-            print(prediction)
-            
-            word = vocab[prediction]
-            print(word)
 
-            prediction_sequence.append(word)
-            print(f"Predicted so far: {prediction_sequence}")
-
-            if prediction == 49407: # End token
-                break
-            
-            prediction_emb = dataset.get_token_embedding(prediction)
-            # Add prediction to token sequence
-            token_seq = torch.cat([token_seq, torch.tensor([[prediction_emb]], device=device)], dim=1)
-            
-            if token_seq.size(1) >= max_tokens:
-                break
-=======
->>>>>>> Stashed changes
     
     for _ in range(max_length):
         with torch.no_grad():
