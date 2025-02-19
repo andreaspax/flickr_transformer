@@ -28,6 +28,7 @@ val_length = int(length * 0.999)
 train_ds = ds.select(range(train_length))
 val_ds = ds.select(range(train_length, val_length))
 test_ds = ds.select(range(val_length, length))
+test_ds = ds.select(range(length-1, length))
 
 
 class FlickrClipDataset(torch.utils.data.Dataset):
@@ -47,7 +48,15 @@ class FlickrClipDataset(torch.utils.data.Dataset):
         return photo, caption
 
 def get_token_embedding(token_id):
-        return clip_model.get_text_features(token_id)
+        with torch.no_grad():
+            return clip_model.get_text_features(torch.tensor([token_id]).to(device))
+
+def get_initial_img_embedding(photo):
+    with torch.no_grad():
+        processor_output = clip_processor(images=photo)
+        img_tensor = torch.Tensor(processor_output.pixel_values).to(device)
+        img_emb = clip_model.get_image_features(img_tensor)
+        return img_emb
 
 def _collate_fn(batch):
     photos = [item[0] for item in batch]

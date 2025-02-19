@@ -7,7 +7,7 @@ import dataset
 import torch.multiprocessing as mp
 
 
-def validate(model, val_dataloader, loss_fn, device, vocab_size):
+def validate(model, val_dataloader, loss_fn, device):
     model.eval()
     total_val_loss = 0
     total_val_correct = 0
@@ -73,7 +73,7 @@ def train():
 
     print("Loading dataset and dataloader...")
     train_dataloader = torch.utils.data.DataLoader(
-        dataset.FlickrClipDataset(dataset.train_ds),
+        dataset.FlickrClipDataset(dataset.test_ds),
         batch_size=batch_size,
         shuffle=True,
         collate_fn=dataset._collate_fn,
@@ -81,7 +81,7 @@ def train():
         persistent_workers=True
     )
     val_dataloader = torch.utils.data.DataLoader(
-        dataset.FlickrClipDataset(dataset.val_ds),
+        dataset.FlickrClipDataset(dataset.test_ds),
         batch_size=8,
         shuffle=False,
         collate_fn=dataset._collate_fn,
@@ -140,7 +140,7 @@ def train():
         train_accuracy = total_correct / total_samples
         
         # Validation phase
-        avg_val_loss, val_accuracy = validate(model, val_dataloader, loss_fn, device, vocab_size)
+        avg_val_loss, val_accuracy = validate(model, val_dataloader, loss_fn, device)
         
         # Update learning rate scheduler with validation loss
         scheduler.step(avg_val_loss)

@@ -29,24 +29,18 @@ model.to(device)
 model.eval()
 
 with torch.no_grad():
-    val_ds = dataset.FlickrClipDataset(dataset.val_ds)
+    val_ds = dataset.FlickrClipDataset(dataset.test_ds)
     # Test DataLoader with custom collate function
-    dataloader = torch.utils.data.DataLoader(
-        val_ds, 
-        batch_size=1, 
-        shuffle=False,
-        collate_fn=dataset._collate_fn  # Re-enable the custom collate_fn
-    )
-    batch = next(iter(dataloader))
-    _, caption = val_ds.__getitem__(0)
+    photo, caption = val_ds.__getitem__(0)
 
     print("Caption: ",caption)
-    max_tokens = 77
+    max_length = 77
     prediction_sequence = []
 
     # Create start token (usually 10 for start token)
-    token_seq = batch[0]  # Shape: [1, 1]
+    tgt_seq = dataset.get_initial_img_embedding(photo).unsqueeze(0)  # Shape: [1, 1]
     
+<<<<<<< Updated upstream
     with torch.no_grad():
         for n in range(1):
             print(f"\nCurrent sequence: {token_seq}")
@@ -73,5 +67,24 @@ with torch.no_grad():
             
             if token_seq.size(1) >= max_tokens:
                 break
+=======
+>>>>>>> Stashed changes
     
-    print("Prediction: ",prediction_sequence)
+    for _ in range(max_length):
+        with torch.no_grad():
+            output = model(tgt_seq)  # Predict next token
+            next_token = output[:, -1, :].argmax(dim=-1).unsqueeze(0)  # Get most probable token
+            next_emb = dataset.get_token_embedding(next_token).unsqueeze(0)
+
+        # Append next_token to prediction sequence
+        prediction_sequence.append(next_token.item())
+
+        # Append next token to sequence
+        tgt_seq = torch.cat([tgt_seq, next_emb], dim=1)
+        
+        # Stop if <EOS> token is generated
+        if next_token.item() == 49407:
+            break
+
+    # Decode token IDs into words
+    print(prediction_sequence)
