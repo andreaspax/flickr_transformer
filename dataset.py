@@ -22,11 +22,12 @@ clip_model.eval()
 
 
 length = len(ds)
-train_length = int(length * 0.05) #trying with 10% only to check training
-test_length = length - train_length
+train_length = int(length * 0.99) 
+val_length = int(length * 0.999)
 
 train_ds = ds.select(range(train_length))
-test_ds = ds.select(range(train_length, length))
+val_ds = ds.select(range(train_length, val_length))
+test_ds = ds.select(range(val_length, length))
 
 
 class FlickrClipDataset(torch.utils.data.Dataset):
@@ -81,20 +82,20 @@ def _collate_fn(batch):
 
 if __name__ == "__main__":
 
-    test_ds = FlickrClipDataset(test_ds)
-    print(f"Dataset size: {len(test_ds)}")
+    val_ds = FlickrClipDataset(val_ds)
+    print(f"Dataset size: {len(val_ds)}")
 
     # Test DataLoader with custom collate function
     dataloader = torch.utils.data.DataLoader(
-        test_ds, 
-        batch_size=256, 
-        shuffle=True,
+        val_ds, 
+        batch_size=2, 
+        shuffle=False,
         collate_fn=_collate_fn  # Re-enable the custom collate_fn
     )
 
     # Test
     batch = next(iter(dataloader))
-    photo, caption = test_ds.__getitem__(33)
+    photo, caption = val_ds.__getitem__(33)
 
     import matplotlib.pyplot as plt
 

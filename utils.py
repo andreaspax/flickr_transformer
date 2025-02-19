@@ -15,4 +15,7 @@ def get_device():
         return torch.device("mps")
     else:
         return torch.device("cpu")
-    print("device:", device)
+    
+if __name__ == "__main__":
+    device = get_device()
+    print(device)

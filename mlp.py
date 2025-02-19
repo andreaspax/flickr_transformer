@@ -7,7 +7,7 @@ class MLP(torch.nn.Module):
 
         self.linear = torch.nn.Sequential(
             torch.nn.Linear(d_model, dff),
-            torch.nn.ReLU(),
+            torch.nn.GELU(),
             torch.nn.Linear(dff, d_model),
             torch.nn.Dropout(dropout),
             torch.nn.LayerNorm(d_model),

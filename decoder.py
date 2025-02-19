@@ -8,6 +8,7 @@ class Decoder(torch.nn.Module):
         super().__init__()
 
         self.positional_encoding = torch.nn.parameter.Parameter(torch.randn(seq_len, d_model))
+        self.ln = torch.nn.LayerNorm(d_model)
         
         self.decoder_blocks = torch.nn.ModuleList([
             DecoderBlock(dff, d_model, dropout),
@@ -26,7 +27,6 @@ class Decoder(torch.nn.Module):
 
         self.final = torch.nn.Linear(d_model, vocab_size)
 
-        self.softmax = torch.nn.Softmax(dim=-1)
         
     def forward(self, x: torch.Tensor, y: torch.Tensor):
         
@@ -39,12 +39,12 @@ class Decoder(torch.nn.Module):
 
         x = x + self.positional_encoding[:seq_len, :]
 
+        x = self.ln(x)
+
         for block in self.decoder_blocks:
             x = block(x)
 
         x = self.final(x)
-
-        x = self.softmax(x)
         return x
     
 class DecoderBlock(torch.nn.Module):
