@@ -22,7 +22,7 @@ clip_model.eval()
 
 
 length = len(ds)
-train_length = int(length * 0.8)
+train_length = int(length * 0.05) #trying with 10% only to check training
 test_length = length - train_length
 
 train_ds = ds.select(range(train_length))
