@@ -22,8 +22,8 @@ clip_model.eval()
 
 
 length = len(ds)
-train_length = int(length * 0.99) 
-val_length = int(length * 0.999)
+train_length = int(length * 0.80) 
+val_length = int(length * 0.90)
 
 train_ds = ds.select(range(train_length))
 val_ds = ds.select(range(train_length, val_length))
@@ -46,6 +46,8 @@ class FlickrClipDataset(torch.utils.data.Dataset):
 
         return photo, caption
 
+def get_token_embedding(token_id):
+        return clip_model.get_text_features(token_id)
 
 def _collate_fn(batch):
     photos = [item[0] for item in batch]
@@ -68,16 +70,18 @@ def _collate_fn(batch):
         input_tokens = input_tokens[:, 1:-1]
         input_attention_mask = input_attention_mask[:, 1:-1]
 
-        clip_image_outputs = clip_model.get_image_features(processor_outputs.pixel_values)
+        clip_image_outputs = clip_model.get_image_features(processor_outputs.pixel_values).unsqueeze(1)
         clip_text_outputs = clip_model.text_model(input_tokens, attention_mask=input_attention_mask)
+        combined_outputs = torch.cat((clip_image_outputs, clip_text_outputs.last_hidden_state), dim=1)
+        attention_mask = torch.cat((input_attention_mask, torch.zeros(input_attention_mask.size(0), 1).to(device)), dim=1)
 
 
         return (
-            clip_image_outputs,
-            clip_text_outputs.last_hidden_state,
-            input_attention_mask,
+            combined_outputs,
+            attention_mask,
             output_tokens,
         )
+    
 
 
 if __name__ == "__main__":
@@ -95,15 +99,15 @@ if __name__ == "__main__":
 
     # Test
     batch = next(iter(dataloader))
-    photo, caption = val_ds.__getitem__(33)
+    photo, caption = val_ds.__getitem__(1)
 
     import matplotlib.pyplot as plt
 
     print(caption)
     print(batch[0].shape)
     print(batch[1].shape)
+    print(batch[1])
     print(batch[2].shape)
-    print(batch[3].shape)
-    print(batch[3])
+    print(batch[2])
     plt.imshow(photo)
     plt.show()

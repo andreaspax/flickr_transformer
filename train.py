@@ -15,15 +15,13 @@ def validate(model, val_dataloader, loss_fn, device, vocab_size):
     
     with torch.no_grad():
         for batch in tqdm.tqdm(val_dataloader, desc="Validating", leave=False):
-            img_emb, caption_in_emb, _, caption_out = [t.to(device) for t in batch]
+            combined_outputs, attention_mask, caption_out = [t.to(device) for t in batch]
             
             # Forward pass
-            logits = model(caption_in_emb, img_emb)
-            logits = logits.view(-1, vocab_size)
-            caption_out = caption_out.reshape(-1)
+            logits = model(combined_outputs)
             
             # Mask and loss calculation
-            mask = (caption_out != 0)
+            mask = (attention_mask != 0)
             loss = loss_fn(logits[mask], caption_out[mask])
             
             # Metrics
@@ -75,7 +73,7 @@ def train():
 
     print("Loading dataset and dataloader...")
     train_dataloader = torch.utils.data.DataLoader(
-        dataset.FlickrClipDataset(dataset.val_ds),
+        dataset.FlickrClipDataset(dataset.train_ds),
         batch_size=batch_size,
         shuffle=True,
         collate_fn=dataset._collate_fn,
@@ -83,12 +81,12 @@ def train():
         persistent_workers=True
     )
     val_dataloader = torch.utils.data.DataLoader(
-        dataset.FlickrClipDataset(dataset.test_ds),
+        dataset.FlickrClipDataset(dataset.val_ds),
         batch_size=8,
         shuffle=False,
         collate_fn=dataset._collate_fn,
-        num_workers=0,
-        # persistent_workers=True
+        num_workers=4,
+        persistent_workers=True
     )
 
     # Simplified loss and optimizer
@@ -110,15 +108,13 @@ def train():
         
         for batch in prgs:
             optimiser.zero_grad()
-            img_emb, caption_in_emb, _, caption_out = [t.to(device) for t in batch]
+            combined_outputs, attention_mask, caption_out = [t.to(device) for t in batch]
 
             # Forward pass
-            logits = model(caption_in_emb, img_emb)
-            logits = logits.view(-1, vocab_size)
-            caption_out = caption_out.reshape(-1)
+            logits = model(combined_outputs)
 
-            # Mask and loss calculation
-            mask = (caption_out != 0)
+            mask = (attention_mask != 0)
+
             loss = loss_fn(logits[mask], caption_out[mask])
             loss.backward()
             
