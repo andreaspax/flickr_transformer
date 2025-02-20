@@ -1,5 +1,5 @@
 import random
-
+import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 import decoder
@@ -19,7 +19,7 @@ seed = 2
 model = decoder.Decoder(di_initial=512, d_model=d_model, dff=dff, vocab_size=vocab_size, dropout=dropout)
 
 print("Loading model...")
-model.load_state_dict(torch.load("weights/flicker-captioning-best.pt", map_location=device, weights_only=True))
+model.load_state_dict(torch.load("weights/flicker-captioning-final.pt", map_location=device, weights_only=True))
 
 # count number of parameters
 total_params = sum(p.numel() for p in model.parameters())
@@ -59,3 +59,11 @@ with torch.no_grad():
 
     # Decode token IDs into words
     print(prediction_sequence)
+
+    print(dataset.decode_tokens(prediction_sequence))
+
+    # # Assuming photo is a tensor, convert it to a numpy array for visualization
+    # plt.imshow(photo)
+    # plt.axis('off')  # Hide axis
+    # plt.title("Generated Photo")
+    # plt.show()

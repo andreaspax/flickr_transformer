@@ -58,6 +58,9 @@ def get_initial_img_embedding(photo):
         img_emb = clip_model.get_image_features(img_tensor)
         return img_emb
 
+def decode_tokens(tokens):
+    return clip_processor.decode(tokens, skip_special_tokens=True)
+
 def _collate_fn(batch):
     photos = [item[0] for item in batch]
     captions = [item[1] for item in batch]

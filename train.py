@@ -75,18 +75,18 @@ def train():
     train_dataloader = torch.utils.data.DataLoader(
         dataset.FlickrClipDataset(dataset.test_ds),
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=False,
         collate_fn=dataset._collate_fn,
-        num_workers=4,
-        persistent_workers=True
+        num_workers=0,
+        # persistent_workers=True
     )
     val_dataloader = torch.utils.data.DataLoader(
         dataset.FlickrClipDataset(dataset.test_ds),
         batch_size=8,
         shuffle=False,
         collate_fn=dataset._collate_fn,
-        num_workers=4,
-        persistent_workers=True
+        num_workers=0,
+        # persistent_workers=True
     )
 
     # Simplified loss and optimizer
@@ -139,42 +139,42 @@ def train():
         avg_train_loss = total_loss / len(train_dataloader)
         train_accuracy = total_correct / total_samples
         
-        # Validation phase
-        avg_val_loss, val_accuracy = validate(model, val_dataloader, loss_fn, device)
+        # # Validation phase
+        # avg_val_loss, val_accuracy = validate(model, val_dataloader, loss_fn, device)
         
-        # Update learning rate scheduler with validation loss
-        scheduler.step(avg_val_loss)
+        # # Update learning rate scheduler with validation loss
+        # scheduler.step(avg_val_loss)
         
         # Save best model
-        if avg_val_loss < best_val_loss:
-            best_val_loss = avg_val_loss
-            print(f"New best validation loss: {best_val_loss:.4f}")
-            torch.save(model.state_dict(), "weights/flicker-captioning-best.pt")
+        # if avg_val_loss < best_val_loss:
+        #     best_val_loss = avg_val_loss
+        #     print(f"New best validation loss: {best_val_loss:.4f}")
+        #     torch.save(model.state_dict(), "weights/flicker-captioning-best.pt")
         
-        print(f"Epoch {epoch+1}")
-        print(f"Train Loss: {avg_train_loss:.4f}, Train Acc: {train_accuracy:.2%}")
-        print(f"Val Loss: {avg_val_loss:.4f}, Val Acc: {val_accuracy:.2%}")
-        print(f"Current LR: {optimiser.param_groups[0]['lr']}")
+    #     print(f"Epoch {epoch+1}")
+    #     print(f"Train Loss: {avg_train_loss:.4f}, Train Acc: {train_accuracy:.2%}")
+    #     print(f"Val Loss: {avg_val_loss:.4f}, Val Acc: {val_accuracy:.2%}")
+    #     print(f"Current LR: {optimiser.param_groups[0]['lr']}")
         
-        wandb.log({
-            "learning_rate": optimiser.param_groups[0]['lr'],
-            "train_loss": avg_train_loss,
-            "train_accuracy": train_accuracy,
-            "val_loss": avg_val_loss,
-            "val_accuracy": val_accuracy,
-            "epoch": epoch
-        })
+    #     wandb.log({
+    #         "learning_rate": optimiser.param_groups[0]['lr'],
+    #         "train_loss": avg_train_loss,
+    #         "train_accuracy": train_accuracy,
+    #         "val_loss": avg_val_loss,
+    #         "val_accuracy": val_accuracy,
+    #         "epoch": epoch
+    #     })
 
-    print("Saving final model...")
+    # print("Saving final model...")
     torch.save(model.state_dict(), "weights/flicker-captioning-final.pt")
     
-    # Log both best and final models
-    artifact = wandb.Artifact("model-weights", type="flicker-captioning")
-    artifact.add_file("weights/flicker-captioning-best.pt")
-    artifact.add_file("weights/flicker-captioning-final.pt")
-    wandb.log_artifact(artifact)
+    # # Log both best and final models
+    # artifact = wandb.Artifact("model-weights", type="flicker-captioning")
+    # artifact.add_file("weights/flicker-captioning-best.pt")
+    # artifact.add_file("weights/flicker-captioning-final.pt")
+    # wandb.log_artifact(artifact)
     
-    print("Done!")
+    # print("Done!")
     wandb.finish()
 
 if __name__ == "__main__":
