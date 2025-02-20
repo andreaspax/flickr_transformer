@@ -22,8 +22,8 @@ clip_model.eval()
 
 
 length = len(ds)
-train_length = int(length * 0.99) 
-val_length = int(length * 0.999)
+train_length = int(length * 0.8) 
+val_length = int(length * 0.9)
 
 train_ds = ds.select(range(train_length))
 val_ds = ds.select(range(train_length, val_length))

@@ -39,7 +39,7 @@ def validate(model, val_dataloader, loss_fn, device):
 
 def train():
     batch_size = 64
-    epochs = 20
+    epochs = 5
     initial_lr = 0.001
     d_model = 512
     dff = 2048
@@ -73,20 +73,20 @@ def train():
 
     print("Loading dataset and dataloader...")
     train_dataloader = torch.utils.data.DataLoader(
-        dataset.FlickrClipDataset(dataset.val_ds),
+        dataset.FlickrClipDataset(dataset.train_ds),
         batch_size=batch_size,
-        shuffle=False,
+        shuffle=True,
         collate_fn=dataset._collate_fn,
-        num_workers=0,
-        persistent_workers=False
+        num_workers=4,
+        persistent_workers=True
     )
     val_dataloader = torch.utils.data.DataLoader(
-        dataset.FlickrClipDataset(dataset.test_ds),
-        batch_size=8,
-        shuffle=False,
+        dataset.FlickrClipDataset(dataset.val_ds),
+        batch_size=batch_size//2,
+        shuffle=True,
         collate_fn=dataset._collate_fn,
-        num_workers=0,
-        persistent_workers=False
+        num_workers=4,
+        persistent_workers=True
     )
 
     # Simplified loss and optimizer

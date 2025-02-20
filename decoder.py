@@ -17,12 +17,12 @@ class Decoder(torch.nn.Module):
             DecoderBlock(dff, d_model, dropout),
             DecoderBlock(dff, d_model, dropout),
             DecoderBlock(dff, d_model, dropout),
-            # DecoderBlock(dff, d_model, dropout),
-            # DecoderBlock(dff, d_model, dropout),
-            # DecoderBlock(dff, d_model, dropout),
-            # DecoderBlock(dff, d_model, dropout),
-            # DecoderBlock(dff, d_model, dropout),
-            # DecoderBlock(dff, d_model, dropout),
+            DecoderBlock(dff, d_model, dropout),
+            DecoderBlock(dff, d_model, dropout),
+            DecoderBlock(dff, d_model, dropout),
+            DecoderBlock(dff, d_model, dropout),
+            DecoderBlock(dff, d_model, dropout),
+            DecoderBlock(dff, d_model, dropout),
         ])
 
         self.final = torch.nn.Linear(d_model, vocab_size)
