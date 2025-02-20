@@ -29,9 +29,9 @@ model.to(device)
 model.eval()
 
 with torch.no_grad():
-    val_ds = dataset.FlickrClipDataset(dataset.test_ds)
+    train_ds = dataset.FlickrClipDataset(dataset.train_ds)
     # Test DataLoader with custom collate function
-    photo, caption = val_ds.__getitem__(0)
+    photo, caption = train_ds.__getitem__(12)
 
     print("Caption: ",caption)
     max_length = 77
@@ -62,7 +62,17 @@ with torch.no_grad():
 
     print(dataset.decode_tokens(prediction_sequence))
 
+    plt.figure(figsize=(11, 6))
+    
+    # Create two subplots side by side
+    plt.subplot(1, 2, 1)
     plt.imshow(photo)
-    plt.axis('off')  # Hide axis
-    plt.title("Generated Photo")
+    
+    plt.axis('off')
+    plt.text(0, -0.3, dataset.decode_tokens(prediction_sequence), 
+             va='top', ha='center', fontsize=8,
+             transform=plt.gca().transAxes,
+             bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=3))
+    
+    plt.tight_layout()
     plt.show()
