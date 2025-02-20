@@ -5,6 +5,9 @@ import decoder
 import utils
 import dataset
 import torch.multiprocessing as mp
+import datetime
+
+ts = datetime.datetime.now().strftime('%Y_%m_%d__%H_%M_%S')
 
 
 def validate(model, val_dataloader, loss_fn, device):
@@ -39,7 +42,7 @@ def validate(model, val_dataloader, loss_fn, device):
 
 def train():
     batch_size = 64
-    epochs = 5
+    epochs = 20
     initial_lr = 0.001
     d_model = 512
     dff = 2048
@@ -48,6 +51,9 @@ def train():
     dropout = 0.1
     seed = 2
 
+    # Add these parameters
+    gradient_accumulation_steps = 4
+    
     torch.manual_seed(seed)
     print("Device:", device)
 
@@ -91,7 +97,13 @@ def train():
 
     # Simplified loss and optimizer
     loss_fn = torch.nn.CrossEntropyLoss(label_smoothing=0.1)
-    optimiser = torch.optim.Adam(model.parameters(), lr=initial_lr)
+    optimiser = torch.optim.AdamW(
+        model.parameters(),
+        lr=initial_lr,
+        betas=(0.9, 0.98),
+        eps=1e-6,
+        weight_decay=0.01
+    )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimiser, mode='min', factor=0.5, patience=2)
 
     best_val_loss = float('inf')
@@ -106,7 +118,7 @@ def train():
         
         prgs = tqdm.tqdm(train_dataloader, desc=f"Epoch {epoch+1}", leave=False)
         
-        for batch in prgs:
+        for i, batch in enumerate(prgs):
             optimiser.zero_grad()
             combined_outputs, attention_mask, caption_out = [t.to(device) for t in batch]
 
@@ -115,12 +127,13 @@ def train():
 
             mask = (attention_mask != 0)
 
-            loss = loss_fn(logits[mask], caption_out[mask])
+            loss = loss_fn(logits[mask], caption_out[mask]) / gradient_accumulation_steps
             loss.backward()
             
-            # Update weights
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimiser.step()
+            if (i + 1) % gradient_accumulation_steps == 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                optimiser.step()
+                optimiser.zero_grad()
 
             # Metrics
             with torch.no_grad():
@@ -166,12 +179,12 @@ def train():
         })
 
     print("Saving final model...")
-    torch.save(model.state_dict(), "weights/flicker-captioning-final.pt")
+    torch.save(model.state_dict(), f"weights/flicker-captioning-final_{ts}.pt")
     
     # Log both best and final models
     artifact = wandb.Artifact("model-weights", type="flicker-captioning")
-    artifact.add_file("weights/flicker-captioning-best.pt")
-    artifact.add_file("weights/flicker-captioning-final.pt")
+    # artifact.add_file("weights/flicker-captioning-best.pt")
+    artifact.add_file(f"weights/flicker-captioning-final_{ts}.pt")
     wandb.log_artifact(artifact)
     
     print("Done!")

@@ -26,11 +26,19 @@ class Decoder(torch.nn.Module):
         ])
 
         self.final = torch.nn.Linear(d_model, vocab_size)
-
+        
+        # Add weight decay
+        self.dropout = torch.nn.Dropout(dropout)
+        self.embed_dropout = torch.nn.Dropout(0.1)
+        
+        # Add layer norm to embeddings
+        self.embed_norm = torch.nn.LayerNorm(d_model)
         
     def forward(self, x: torch.Tensor):
 
         x = self.fc(x)
+        x = self.embed_dropout(x)
+        x = self.embed_norm(x)
 
         seq_len = x.size(1)
         # Only use positional encoding up to current sequence length
