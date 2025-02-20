@@ -20,3 +20,5 @@ def get_device():
 if __name__ == "__main__":
     vocab = get_vocab()
     print(vocab[49407])
+    device = get_device()
+    print(device)
