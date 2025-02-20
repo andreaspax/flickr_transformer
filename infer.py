@@ -62,8 +62,7 @@ with torch.no_grad():
 
     print(dataset.decode_tokens(prediction_sequence))
 
-    # # Assuming photo is a tensor, convert it to a numpy array for visualization
-    # plt.imshow(photo)
-    # plt.axis('off')  # Hide axis
-    # plt.title("Generated Photo")
-    # plt.show()
+    plt.imshow(photo)
+    plt.axis('off')  # Hide axis
+    plt.title("Generated Photo")
+    plt.show()

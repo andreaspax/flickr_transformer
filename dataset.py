@@ -28,7 +28,6 @@ val_length = int(length * 0.999)
 train_ds = ds.select(range(train_length))
 val_ds = ds.select(range(train_length, val_length))
 test_ds = ds.select(range(val_length, length))
-test_ds = ds.select(range(length-1, length))
 
 
 class FlickrClipDataset(torch.utils.data.Dataset):
