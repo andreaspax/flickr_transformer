@@ -76,8 +76,6 @@ def train():
             "dropout": dropout,
         },
     )
-    artifact = wandb.Artifact("model-weights", type="flicker-captioning")
-
 
     print("Loading dataset and dataloader...")
     train_dataloader = torch.utils.data.DataLoader(
@@ -166,9 +164,13 @@ def train():
             print(f"New best validation loss: {best_val_loss:.4f}")
             
             # Save model locally
-            best_model_path = f"weights/flicker-captioning-checkpoint_{epoch+1}_{ts}.pt"
+            best_model_path = f"weights/flicker-captioning-best_{epoch+1}_{ts}.pt"
             torch.save(model.state_dict(), best_model_path)
-            artifact.add_file(best_model_path)
+            
+            # Create NEW artifact for each best model
+            best_artifact = wandb.Artifact(f"best-flicker-captioning-{epoch+1}", type="decoder-model")
+            best_artifact.add_file(best_model_path)
+            wandb.log_artifact(best_artifact)
 
         print(f"Epoch {epoch+1}")
         print(f"Train Loss: {avg_train_loss:.4f}, Train Acc: {train_accuracy:.2%}")
@@ -184,16 +186,21 @@ def train():
             "val_accuracy": val_accuracy,
             "epoch": epoch
         })
-        # Save model checkpoint locally
-        checkpoint_path = f"weights/flicker-captioning-checkpoint_{ts}.pt"
-        torch.save(model.state_dict(), checkpoint_path)
-        artifact.add_file(checkpoint_path)
-        wandb.log_artifact(artifact)
 
+        # Create NEW artifact for each epoch
+        model_checkpoint_path = f"weights/flicker-captioning-best_{epoch+1}_{ts}.pt"
+        torch.save(model.state_dict(), model_checkpoint_path)
+        model_checkpoint_artifact = wandb.Artifact(f"checkpoint-flicker-captioning-{epoch+1}", type="decoder-model")
+        model_checkpoint_artifact.add_file(model_checkpoint_path)
+        wandb.log_artifact(model_checkpoint_artifact)
+
+    # After training completes, log final model separately
     print("Saving final model...")
-    torch.save(model.state_dict(), f"weights/flicker-captioning-final_{ts}.pt")
-    artifact.add_file(f"weights/flicker-captioning-final_{ts}.pt")
-    wandb.log_artifact(artifact)
+    final_model_path = f"weights/flicker-captioning-final_{ts}.pt"
+    torch.save(model.state_dict(), final_model_path)
+    final_artifact = wandb.Artifact("final-flicker-captioning", type="decoder-model")
+    final_artifact.add_file(final_model_path)
+    wandb.log_artifact(final_artifact)
     
     print("Done!")
     wandb.finish()
