@@ -40,10 +40,10 @@ def validate(model, val_dataloader, loss_fn, device):
     return avg_val_loss, val_accuracy
 
 
-def train():
+def train(load_state_dict=None):
     batch_size = 64
     epochs = 20
-    initial_lr = 0.001
+    initial_lr = 0.0005
     d_model = 512
     dff = 2048
     device = utils.get_device()
@@ -59,6 +59,11 @@ def train():
 
     print("Initialising model...")
     model = decoder.Decoder(di_initial=512, d_model=d_model, dff=dff, vocab_size=vocab_size, dropout=dropout)
+
+    # Load model state dict if provided
+    if load_state_dict:
+        model.load_state_dict(torch.load(load_state_dict))
+
     model.to(device)
 
     params = sum(p.numel() for p in model.parameters())
@@ -207,4 +212,4 @@ def train():
 
 if __name__ == "__main__":
     mp.set_start_method('spawn', force=True)
-    train()
+    train(load_state_dict="weights/flicker-captioning-final.pt")
