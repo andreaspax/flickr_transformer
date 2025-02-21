@@ -76,6 +76,8 @@ def train():
             "dropout": dropout,
         },
     )
+    artifact = wandb.Artifact("model-weights", type="flicker-captioning")
+
 
     print("Loading dataset and dataloader...")
     train_dataloader = torch.utils.data.DataLoader(
@@ -162,13 +164,18 @@ def train():
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             print(f"New best validation loss: {best_val_loss:.4f}")
-            torch.save(model.state_dict(), "weights/flicker-captioning-best.pt")
-        
+            
+            # Save model locally
+            best_model_path = f"weights/flicker-captioning-checkpoint_{epoch+1}_{ts}.pt"
+            torch.save(model.state_dict(), best_model_path)
+            artifact.add_file(best_model_path)
+
         print(f"Epoch {epoch+1}")
         print(f"Train Loss: {avg_train_loss:.4f}, Train Acc: {train_accuracy:.2%}")
         print(f"Val Loss: {avg_val_loss:.4f}, Val Acc: {val_accuracy:.2%}")
         print(f"Current LR: {optimiser.param_groups[0]['lr']}")
-        
+
+        # Log metrics
         wandb.log({
             "learning_rate": optimiser.param_groups[0]['lr'],
             "train_loss": avg_train_loss,
@@ -177,13 +184,14 @@ def train():
             "val_accuracy": val_accuracy,
             "epoch": epoch
         })
+        # Save model checkpoint locally
+        checkpoint_path = f"weights/flicker-captioning-checkpoint_{ts}.pt"
+        torch.save(model.state_dict(), checkpoint_path)
+        artifact.add_file(checkpoint_path)
+        wandb.log_artifact(artifact)
 
     print("Saving final model...")
     torch.save(model.state_dict(), f"weights/flicker-captioning-final_{ts}.pt")
-    
-    # Log both best and final models
-    artifact = wandb.Artifact("model-weights", type="flicker-captioning")
-    # artifact.add_file("weights/flicker-captioning-best.pt")
     artifact.add_file(f"weights/flicker-captioning-final_{ts}.pt")
     wandb.log_artifact(artifact)
     
