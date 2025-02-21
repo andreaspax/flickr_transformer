@@ -1,40 +1,34 @@
 import matplotlib.pyplot as plt
 import torch
 import decoder
-import dataset
+import transformers
 import utils
+import dataset
+from PIL import Image
 
+torch.manual_seed(2)
 
-
-d_model = 512
-dff = 2048
-device = utils.get_device()
-vocab = utils.get_vocab()
-vocab_size = len(vocab)
-dropout = 0.1
-seed = 2
-
-model = decoder.Decoder(di_initial=512, d_model=d_model, dff=dff, vocab_size=vocab_size, dropout=dropout)
-
-print("Loading model...")
-model.load_state_dict(torch.load("weights/flicker-captioning-final_2025_02_20__16_41_54.pt", map_location=device, weights_only=True))
-
-# count number of parameters
-total_params = sum(p.numel() for p in model.parameters())
-print(f"Total number of parameters: {total_params}")
-
-model.to(device)
-model.eval()
-
-def generate_caption(model, image, temperature=0.7, max_length=77):
+def models():
+    device = utils.get_device()
+    model = decoder.Decoder(di_initial=512, d_model=512, dff=2048, vocab_size=49408)
+    model.load_state_dict(torch.load("weights/flicker-captioning-best_19.pt", map_location=device))
+    model.to(device)
     model.eval()
+    pretrained_model = "openai/clip-vit-base-patch32"
+    clip_model = transformers.CLIPModel.from_pretrained(pretrained_model).to(device)
+    clip_processor = transformers.CLIPProcessor.from_pretrained(pretrained_model)
+    clip_model.eval()
+    return model, clip_model, clip_processor
+
+def generate_caption(image, temperature=0.8, max_length=76):
+    model, clip_model, clip_processor = models()
     device = next(model.parameters()).device
     
     with torch.no_grad():
         # Get image embedding using CLIP
-        processor_output = dataset.clip_processor(images=image)
+        processor_output = clip_processor(images=image, return_tensors="pt", padding=True, do_rescale=True)
         img_tensor = torch.tensor(processor_output.pixel_values).to(device)
-        img_emb = dataset.clip_model.get_image_features(img_tensor)
+        img_emb = clip_model.get_image_features(img_tensor)
         img_emb = img_emb.unsqueeze(1)  # Add sequence dimension
         
         # Initialize with just the image embedding
@@ -58,24 +52,32 @@ def generate_caption(model, image, temperature=0.7, max_length=77):
             # Add to generated sequence
             generated_tokens.append(next_token.item())
             
-            # Stop if we generate the end token
-            if next_token.item() == dataset.clip_processor.tokenizer.eos_token_id:
+            # Stop if we generate the end token or period token
+            if next_token.item() == clip_processor.tokenizer.eos_token_id or next_token.item() == 269:
                 break
                 
             # Add token embedding for next iteration
-            next_token_emb = dataset.clip_model.text_model.embeddings.token_embedding(next_token)
+            next_token_emb = clip_model.text_model.embeddings.token_embedding(next_token)
             current_output = torch.cat([current_output, next_token_emb], dim=1)
         
         # Decode the generated tokens
-        caption = dataset.clip_processor.decode(generated_tokens, skip_special_tokens=True)
+        caption = clip_processor.decode(generated_tokens, skip_special_tokens=True)
         return caption
+
+    # Format text: capitalize first word of sentences and fix spaces before periods
+def format_caption(caption):
+        formatted = '. '.join([s.strip().capitalize() for s in caption.strip().split('.') if s.strip()])
+        formatted = formatted.replace(' .', '.')  # Remove space before period
+        if caption.endswith('.'):  # Maintain trailing period if originally present
+            formatted += '.'
+        return formatted
 
 def main():
     # Create dataset wrapper
     val_dataset = dataset.FlickrClipDataset(dataset.val_ds)
     
     # Test on a few images from validation set
-    test_indices = [0, 10, 20, 30]  # Test first few images
+    test_indices = [876]  # Test first few images
     temperatures = [0.7, 0.8, 0.9]  # Try different temperatures
     
     for idx in test_indices:
@@ -93,10 +95,37 @@ def main():
         print("\nGenerated captions at different temperatures:")
         
         for temp in temperatures:
-            generated = generate_caption(model, photo, temperature=temp)
-            print(f"T={temp:.1f}: {generated}")
-        
+            generated = generate_caption(photo, temperature=temp)
+            formatted = format_caption(generated)
+            print(f"T={temp:.1f} - Formatted caption: {formatted}")
         plt.show()
 
 if __name__ == "__main__":
-    main()
+    # Load image
+    device = utils.get_device()
+    image = Image.open("/Users/andreas.paxinos/Downloads/img_outdoor-random-story-generator-scaled-1.jpg")
+    predictions = ['car','people','grass','cat']
+    for k in range(5):
+        caption = generate_caption(image)
+        print(f"Caption {k}: {caption}")
+        predictions.append(caption)
+
+    _, clip_model, clip_processor = models()
+    processor_output = clip_processor(
+        images=image, 
+        text=predictions, 
+        return_tensors="pt", 
+        padding=True, 
+        do_rescale=True
+    ).to(device)
+    model_output = clip_model(**processor_output)
+    # print(model_output.shape)
+    print(model_output.logits_per_image)
+    print("Argmax: ", torch.argmax(model_output.logits_per_image))
+    # Get index of maximum logit value
+    best_idx = torch.argmax(model_output.logits_per_image).item()
+    # Find corresponding prediction
+    best_prediction = predictions[best_idx]
+    print(f"Best prediction: {best_prediction} (index {best_idx})")
+    
+    # main()
